@@ -610,6 +610,8 @@
                     
                     // Create tab-delimited format exactly like DeltaV
                     // Use single tab between each column, no padding
+                    //DO NOT EDIT THIS SECTION
+                    //EDITING THIS WILL CAUSE THE FILE TO NOT BE UTF-16LE
                    const tabDelimited = cleanedData.map(row => {
                         return row.join('\t');
                 }).join('\r\n');
