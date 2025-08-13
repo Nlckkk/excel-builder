@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Builder - DetaV Format Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .upload-section {
+            background: #f8f9fa;
+            border: 2px dashed #007bff;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #0056b3;
+            background: #e3f2fd;
+        }
+
+        .upload-section.dragover {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,123,255,0.4);
+        }
+
+        .sheets-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .sheet-item {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sheet-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .sheet-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .sheet-checkbox {
+            margin-right: 15px;
+            transform: scale(1.2);
+        }
+
+        .sheet-name {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #343a40;
+            flex-grow: 1;
+        }
+
+        .row-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .row-input {
+            width: 80px;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .sheet-preview {
+            padding: 20px;
+            display: none;
+            background: #fafafa;
+        }
+
+        .sheet-preview.active {
+            display: block;
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin-top: 15px;
+        }
+
+        .preview-table th,
+        .preview-table td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: left;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .preview-table th {
+            background: #e9ecef;
+            font-weight: 600;
+        }
+
+        .preview-table .selected-row {
+            background: #fff3cd !important;
+            border: 2px solid #ffc107;
+        }
+
+        .actions-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .process-btn {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 0 10px;
+        }
+
+        .process-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(40,167,69,0.4);
+        }
+
+        .process-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .results-section {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .result-item {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .download-btn {
+            background: linear-gradient(45deg, #17a2b8, #138496);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(23,162,184,0.4);
+        }
+
+        .download-all-section {
+            margin-bottom: 20px;
+            text-align: center;
+            padding: 20px;
+            background: #e9ecef;
+            border-radius: 8px;
+        }
+
+        .download-all-btn {
+            background: linear-gradient(45deg, #dc3545, #c82333);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-right: 15px;
+        }
+
+        .download-all-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(220,53,69,0.4);
+        }
+
+        .file-info-section {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .file-info {
+            font-size: 16px;
+            color: #1976d2;
+            font-weight: 600;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(45deg, #ff9800, #f57c00);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-left: 15px;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255,152,0,0.4);
+        }
+
+        .info-text {
+            color: #6c757d;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .toggle-preview {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .toggle-preview:hover {
+            background: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Excel Builder</h1>
+            <p>Generate DetaV-compatible tab-delimited files from Excel sheets</p>
+        </div>
+
+        <div class="main-content">
+            <div class="upload-section" id="uploadSection">
+                <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls" />
+                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                    📁 Select Excel File
+                </button>
+                <button class="refresh-btn" id="refreshBtn" onclick="refreshFile()" style="display: none;">
+                    🔄 Refresh File
+                </button>
+                <p>or drag and drop your Excel file here</p>
+                <p class="info-text">Supported formats: .xlsx, .xls</p>
+            </div>
+
+            <div class="file-info-section" id="fileInfoSection">
+                <div class="file-info" id="fileInfo"></div>
+            </div>
+
+            <div class="sheets-section" id="sheetsSection">
+                <h2>Select Sheets and Configuration</h2>
+                <div id="sheetsList"></div>
+            </div>
+
+            <div class="actions-section">
+                <button class="process-btn" id="processBtn" onclick="processSelectedSheets()" disabled>
+                    🚀 Generate Tab-Delimited Files
+                </button>
+                <div class="status" id="status"></div>
+            </div>
+
+            <div class="results-section" id="resultsSection">
+                <h3>Generated Files</h3>
+                <div class="download-all-section" id="downloadAllSection" style="display: none;">
+                    <button class="download-all-btn" onclick="downloadAllFiles()">
+                        📥 Download All Files
+                    </button>
+                    <span class="info-text">Downloads all generated files individually</span>
+                </div>
+                <div id="resultsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let workbook = null;
+        let processedFiles = [];
+        let currentFileName = '';
+
+        // File upload handling
+        const fileInput = document.getElementById('fileInput');
+        const uploadSection = document.getElementById('uploadSection');
+
+        fileInput.addEventListener('change', handleFile);
+
+        // Drag and drop
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile({ target: { files: files } });
+            }
+        });
+
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            currentFileName = file.name;
+            showStatus('Loading Excel file...', 'info');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    workbook = XLSX.read(e.target.result, { type: 'binary' });
+                    displaySheets();
+                    showFileInfo();
+                    showStatus('Excel file loaded successfully!', 'success');
+                    
+                    // Show refresh button
+                    document.getElementById('refreshBtn').style.display = 'inline-block';
+                } catch (error) {
+                    showStatus('Error reading Excel file: ' + error.message, 'error');
+                }
+            };
+            reader.readAsBinaryString(file);
+        }
+
+        function refreshFile() {
+            if (!currentFileName) {
+                showStatus('No file selected to refresh.', 'error');
+                return;
+            }
+            
+            // Trigger file input click to select the same file again
+            document.getElementById('fileInput').click();
+        }
+
+        function showFileInfo() {
+            const fileInfoSection = document.getElementById('fileInfoSection');
+            const fileInfo = document.getElementById('fileInfo');
+            
+            const sheetCount = workbook ? workbook.SheetNames.length : 0;
+            fileInfo.textContent = `📄 Selected File: ${currentFileName} (${sheetCount} sheet${sheetCount !== 1 ? 's' : ''})`;
+            
+            fileInfoSection.style.display = 'block';
+        }
+
+        function displaySheets() {
+            const sheetsSection = document.getElementById('sheetsSection');
+            const sheetsList = document.getElementById('sheetsList');
+            
+            sheetsList.innerHTML = '';
+            
+            workbook.SheetNames.forEach((sheetName, index) => {
+                const sheetDiv = document.createElement('div');
+                sheetDiv.className = 'sheet-item';
+                sheetDiv.innerHTML = `
+                    <div class="sheet-header">
+                        <input type="checkbox" class="sheet-checkbox" id="sheet_${index}" onchange="updateProcessButton()">
+                        <span class="sheet-name">${sheetName}</span>
+                        <div class="row-selector">
+                            <label>Start from row:</label>
+                            <input type="number" class="row-input" id="row_${index}" value="3" min="1" onchange="updatePreview(${index})">
+                        </div>
+                        <button class="toggle-preview" onclick="togglePreview(${index})">Preview</button>
+                    </div>
+                    <div class="sheet-preview" id="preview_${index}">
+                        <div id="previewContent_${index}"></div>
+                    </div>
+                `;
+                sheetsList.appendChild(sheetDiv);
+                
+                // Generate initial preview
+                updatePreview(index);
+            });
+            
+            sheetsSection.style.display = 'block';
+        }
+
+        function togglePreview(sheetIndex) {
+            const preview = document.getElementById(`preview_${sheetIndex}`);
+            preview.classList.toggle('active');
+        }
+
+        function updatePreview(sheetIndex) {
+            const sheetName = workbook.SheetNames[sheetIndex];
+            const worksheet = workbook.Sheets[sheetName];
+            const startRow = parseInt(document.getElementById(`row_${sheetIndex}`).value) || 1;
+            
+            // Convert sheet to JSON to work with it
+            const data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+            
+            // Find the actual data range
+            const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1');
+            const lastCol = range.e.c;
+            const lastRow = Math.min(range.e.r + 1, data.length);
+            
+            // Create preview table (show first 10 rows)
+            let previewHTML = `
+                <p><strong>Sheet:</strong> ${sheetName}</p>
+                <p><strong>Data Range:</strong> A1:${XLSX.utils.encode_cell({r: lastRow - 1, c: lastCol})}</p>
+                <p><strong>Starting from row ${startRow}:</strong> Will extract ${Math.max(0, lastRow - startRow + 1)} rows × ${lastCol + 1} columns</p>
+                <table class="preview-table">
+            `;
+            
+            // Show headers and first few rows
+            const previewRows = Math.min(10, data.length);
+            for (let r = 0; r < previewRows; r++) {
+                const isSelectedRow = r >= (startRow - 1);
+                const rowClass = isSelectedRow ? 'selected-row' : '';
+                previewHTML += `<tr class="${rowClass}">`;
+                
+                // Add row number
+                previewHTML += `<th style="background: #6c757d; color: white;">${r + 1}</th>`;
+                
+                for (let c = 0; c <= Math.min(10, lastCol); c++) {
+                    const cellValue = (data[r] && data[r][c]) ? String(data[r][c]).substring(0, 50) : '';
+                    const tag = r === 0 ? 'th' : 'td';
+                    previewHTML += `<${tag}>${cellValue || '&nbsp;'}</${tag}>`;
+                }
+                
+                if (lastCol > 10) {
+                    previewHTML += '<td>...</td>';
+                }
+                previewHTML += '</tr>';
+            }
+            
+            if (data.length > 10) {
+                previewHTML += '<tr><td colspan="100%">... and more rows</td></tr>';
+            }
+            
+            previewHTML += '</table>';
+            
+            document.getElementById(`previewContent_${sheetIndex}`).innerHTML = previewHTML;
+        }
+
+        function updateProcessButton() {
+            const checkboxes = document.querySelectorAll('.sheet-checkbox');
+            const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+            document.getElementById('processBtn').disabled = !anyChecked;
+        }
+
+        function processSelectedSheets() {
+            const checkboxes = document.querySelectorAll('.sheet-checkbox:checked');
+            processedFiles = [];
+            
+            if (checkboxes.length === 0) {
+                showStatus('Please select at least one sheet to process.', 'error');
+                return;
+            }
+
+            showStatus('Processing selected sheets...', 'info');
+
+            checkboxes.forEach(checkbox => {
+                const index = checkbox.id.split('_')[1];
+                const sheetName = workbook.SheetNames[index];
+                const worksheet = workbook.Sheets[sheetName];
+                const startRow = parseInt(document.getElementById(`row_${index}`).value) || 1;
+                
+                try {
+                    // Convert to array of arrays
+                    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+                    
+                    // Extract data from start row to end
+                    const extractedData = data.slice(startRow - 1);
+                    
+                    if (extractedData.length === 0) {
+                        throw new Error(`No data found starting from row ${startRow}`);
+                    }
+                    
+                    // Find the maximum number of columns in the data
+                    const maxColumns = Math.max(...extractedData.map(row => row.length));
+                    
+                    // Clean and normalize all cell data first
+                    const cleanedData = extractedData.map(row => {
+                        const cleanRow = [];
+                        for (let i = 0; i < maxColumns; i++) {
+                            let cellValue = '';
+                            if (row[i] !== undefined && row[i] !== null) {
+                                cellValue = String(row[i]).trim();
+                            }
+                            cleanRow[i] = cellValue;
+                        }
+                        return cleanRow;
+                    });
+                    
+                    // Create tab-delimited format exactly like DeltaV
+                    // Use single tab between each column, no padding
+                   const tabDelimited = cleanedData.map(row => {
+                        return row.join('\t');
+                }).join('\r\n');
+
+                    
+                    processedFiles.push({
+                        name: `${sheetName}_export.txt`,
+                        content: tabDelimited,
+                        sheetName: sheetName,
+                        rowCount: extractedData.length,
+                        startRow: startRow
+                    });
+                    
+                } catch (error) {
+                    console.error(`Error processing sheet ${sheetName}:`, error);
+                }
+            });
+
+            if (processedFiles.length > 0) {
+                showStatus(`Successfully processed ${processedFiles.length} sheet(s)!`, 'success');
+                displayResults();
+            } else {
+                showStatus('No files were generated. Please check your selections.', 'error');
+            }
+        }
+
+        function displayResults() {
+            const resultsSection = document.getElementById('resultsSection');
+            const resultsList = document.getElementById('resultsList');
+            const downloadAllSection = document.getElementById('downloadAllSection');
+            
+            resultsList.innerHTML = '';
+            
+            processedFiles.forEach(file => {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'result-item';
+                
+                // Clean the sheet name for display (remove any problematic characters)
+                const cleanSheetName = file.sheetName.replace(/[<>&"']/g, '');
+                const cleanFileName = file.name.replace(/[<>&"']/g, '');
+                
+                resultDiv.innerHTML = `
+                    <div>
+                        <strong>${cleanFileName}</strong><br>
+                        <small>From sheet: ${cleanSheetName} | Starting row: ${file.startRow} | Rows exported: ${file.rowCount}</small>
+                    </div>
+                    <button class="download-btn" onclick="downloadFileByIndex(${processedFiles.indexOf(file)})">
+                        📥 Download
+                    </button>
+                `;
+                resultsList.appendChild(resultDiv);
+            });
+            
+            // Show download all section if there are multiple files
+            if (processedFiles.length > 1) {
+                downloadAllSection.style.display = 'block';
+            } else {
+                downloadAllSection.style.display = 'none';
+            }
+            
+            resultsSection.style.display = 'block';
+        }
+
+        function downloadFileByIndex(index) {
+            if (index >= 0 && index < processedFiles.length) {
+                const file = processedFiles[index];
+                downloadFile(file.name, file.content);
+            }
+        }
+
+        function downloadFile(filename, content) {
+            // Convert string to UTF-16LE manually
+            const utf16leArray = new Uint8Array(2 + content.length * 2);
+            
+            // Add UTF-16LE BOM (FF FE)
+            utf16leArray[0] = 0xFF;
+            utf16leArray[1] = 0xFE;
+            
+            // Convert each character to UTF-16LE bytes
+            for (let i = 0; i < content.length; i++) {
+                const charCode = content.charCodeAt(i);
+                const byteIndex = 2 + (i * 2);
+                
+                // Little Endian: low byte first, then high byte
+                utf16leArray[byteIndex] = charCode & 0xFF;         // Low byte
+                utf16leArray[byteIndex + 1] = (charCode >> 8) & 0xFF; // High byte
+            }
+            
+            const blob = new Blob([utf16leArray], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        function downloadAllFiles() {
+            if (processedFiles.length === 0) {
+                showStatus('No files to download!', 'error');
+                return;
+            }
+
+            showStatus('Downloading all files...', 'info');
+
+            // Download each file with a small delay to avoid browser blocking
+            processedFiles.forEach((file, index) => {
+                setTimeout(() => {
+                    downloadFile(file.name, file.content);
+                    
+                    // Show completion message after last file
+                    if (index === processedFiles.length - 1) {
+                        setTimeout(() => {
+                            showStatus(`Successfully downloaded ${processedFiles.length} files!`, 'success');
+                        }, 500);
+                    }
+                }, index * 200); // 200ms delay between downloads
+            });
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+            
+            if (type === 'success' || type === 'error') {
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>

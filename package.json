@@ -1,0 +1,51 @@
+{
+  "name": "bulk-excel-builder",
+  "version": "1.0.0",
+  "description": "Generate DetaV-compatible tab-delimited files from Excel sheets",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build-win": "electron-builder --win --publish=never"
+  },
+  "keywords": [
+    "excel",
+    "converter",
+    "tab-delimited",
+    "detav"
+  ],
+  "author": "Nick Alejandro",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^22.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  
+  "build": {
+    "appId": "com.wunderlich-malec.bulk-excel-builder",
+    "productName": "Bulk Excel Builder",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "index.html",
+      "main.js",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable",
+      "forceCodeSigning": false,
+      "signAndEditExecutable": false,
+      "verifyUpdateCodeSignature": false
+    },
+    "portable": {
+      "artifactName": "BulkExcelBuilder.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
+
